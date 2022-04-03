@@ -1,2 +1,2 @@
-///CMCS-CloudMusicCrabbyScraper///
-	一款依赖于网易云音乐API的Python爬虫
+<div align="center"><h2>///CMCS-CloudMusicCrabbyScraper///</h2><br />
+==一款依赖于网易云音乐API的Python爬虫==</div>
