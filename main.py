@@ -45,7 +45,7 @@ try:
            print(str(i+1)+'. '+mnm+'(vip单曲暂不支持操作)')
         else:
             with open('C:\\Users\\'+user+'\\AppData\\Local\\Temp\\cmcs_'+str(i)+'.htm',"w") as f:
-                f.write('<html><head></head><body><center><img src="'+mpc+'" alt="'+mnm+'" width="256" height="256"><br/><audio controls><source src="'+mlk+'" type="audio/mpeg"></audio><br/><font color="blue"><h2>'+mnm+'</h2><h3><br/>#依赖于网易云音乐API的MP3爬虫#<br/>作者:郭宇鑫</h3></font><center></body></html>')
+                f.write('<html><head></head><body><center><img src="'+mpc+'" alt="'+mnm+'" width="256" height="256"><br/><audio controls><source src="'+mlk+'" type="audio/mpeg"></audio><br/><font color="blue"><h2>'+mnm+'</h2><h3><br/>#依赖于网易云音乐API的MP3爬虫#<br/>作者:tudou-eth</h3></font><center></body></html>')
                 f.close()
             print(str(i+1)+'. '+mnm)
 except:
