@@ -1,17 +1,108 @@
 import threading,requests,win32api,platform,base64,ctypes,json,time,glob,sys,os
 from cefpython3 import cefpython as cef
 import tkinter as tk
+from lxml import etree
+'''
+IMPORTANT!!!
+Please install lxml version below 4.2.5 to make sure
+that etree is provided correcty!!!
+'''
 from urllib.parse import quote
+class daili:
+    def send_request(self,page):
+        base_url = 'https://www.kuaidaili.com/free/inha/{}/'.format(page)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36'}
+        response = requests.get(base_url,headers=headers)
+        data = response.content.decode()
+        time.sleep(1)
+        return data
+    def parse_data(self,data):
+        html_data =  etree.HTML(data)
+        parse_list = html_data.xpath('//table[@class="table table-bordered table-striped"]/tbody/tr')
+        return parse_list
+    def check_ip(self,proxies_list):
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36'}
+        can_use = []
+        for proxies in proxies_list:
+            try:
+                response = requests.get('https://www.baidu.com/',headers=headers,proxies=proxies,timeout=0.3)
+                if response.status_code == 200:
+                    can_use.append(proxies)
+            except:
+                pass
+        return can_use
+    def run(self):
+        proxies_list = []
+        for page in range(1,3):
+            data = self.send_request(page)
+            parse_list = self.parse_data(data)
+            for tr in parse_list:
+                proxies_dict  = {}
+                http_type = tr.xpath('./td[4]/text()')
+                ip_num = tr.xpath('./td[1]/text()')
+                port_num = tr.xpath('./td[2]/text()')
+                http_type = ' '.join(http_type)
+                ip_num = ' '.join(ip_num)
+                port_num = ' '.join(port_num)
+                proxies_dict[http_type] = ip_num + ":" + port_num
+                proxies_list.append(proxies_dict)
+        print("Scraping",len(proxies_list),"Chinese http-proxies from Kuaidaili:")
+        pjson = self.check_ip(proxies_list)
+        print(len(pjson),"Active&low-delay http-proxies found.") 
+        return pjson
 print('======CMCS BY TUDOOU-ETH======')
-def CMCS():
+def CMCS(exit=1,proxy="loc",pjson=None):
+    def res():
+        exit=0
+        re=str(input('是否继续搜索(Y/N)：'))
+        if re =='Y' or re =='N' or re =='y' or re =='n':
+            if re =='Y' or re == 'y':
+                CMCS(exit=0,proxy=proxy,pjson=pjson)
+            else:
+                print('感谢您的使用！')
+                time.sleep(1.5)
+                exit=1
+        else:
+            print('错误：请输入Y(是)/N(否)')
+            res()
+        return exit
     user=str(win32api.GetUserName())
     for y in glob.glob(os.path.join('C:\\Users\\'+user+'\\AppData\\Local\\Temp\\','cmcs_*.htm')):
         os.remove(y)
-    try:
-        requests.get('https://www.baidu.com')
-    except:
-        print('连接异常，请检查您的网络！')
-        exit()
+    def rechk():
+        if proxy == "loc":
+            try:
+                requests.get('https://www.baidu.com')
+            except:
+                print('连接异常，请检查您的网络！')
+                time.sleep(3.5)
+                exit()
+        else:
+            try:
+                requests.get('https://www.baidu.com')
+            except:
+                if len(pjson) > 1:
+                    pjson.remove(pjson[0])
+                    rechk()
+                    refr=1
+                    return refr
+                else:
+                    print('连接异常，请检查您的网络！')
+                    time.sleep(3.5)
+                    exit()
+    refr=rechk()
+    if proxy == "loc":
+        rjson=requests.get('http://ip-api.com/json')
+        rjson=json.loads(rjson.text,strict=False)
+        if rjson["countryCode"] != "CN":
+            print("We found that you're not using Chinese ip,")
+            print("please hold still...")
+            dl=daili()
+            pjson=dl.run()
+            print('Using proxy...')
+            refr=1
+    if refr==1:
+        proxy=pjson[0]
     a=quote(str(input("输入您想搜索的音乐:")))
     x=input("键入输出结果的条数:")
     k=0
@@ -27,7 +118,10 @@ def CMCS():
             print("操作失败，请输入整数！")
         exit()
     slk= 'https://music.163.com/api/search/pc?s='+ a +'&offset=0&limit='+str(x)+'&type=1'
-    mjson = requests.get(slk, cookies={"NMTID":"00OuXADISZEZcV3wE3Bhnrj6-iWv_YAAAF_p4zVZQ"})
+    if proxy != 'loc':
+        mjson = requests.get(slk, cookies={"NMTID":"00OuXADISZEZcV3wE3Bhnrj6-iWv_YAAAF_p4zVZQ"},proxies=proxy)
+    else:
+        mjson = requests.get(slk, cookies={"NMTID":"00OuXADISZEZcV3wE3Bhnrj6-iWv_YAAAF_p4zVZQ"})
     mjson=json.loads(mjson.text,strict=False)
     try:
         nml=[]
@@ -53,8 +147,10 @@ def CMCS():
     except:
         if i==0:
             print("很抱歉，未找到相关结果")
-            time.sleep(3)
-            exit()
+            time.sleep(2.5)
+            res()
+            if exit == 1:
+                exit()
         else:
             pass
     c=input("输入您想操作的结果(1~"+str(i+1)+"):")
@@ -65,7 +161,15 @@ def CMCS():
             if os.path.isfile(fpth):
                 def main():
                     sys.excepthook = cef.ExceptHook
-                    cef.Initialize()
+                    if proxy != 'loc':
+                        switches = {
+                            "enable-media-stream": "",
+                            "proxy-server": proxy['http'],
+                            "disable-gpu": "",
+                        }
+                        cef.Initialize(switches=switches)
+                    else:
+                        cef.Initialize()
                     cef.CreateBrowserSync(url='file:///'+fpth,window_title="歌曲预览/"+nml[c-1])
                     cef.MessageLoop()
                 if __name__ == '__main__':
@@ -73,29 +177,34 @@ def CMCS():
                 print("操作成功，感谢您的使用！")
                 re='N'
                 time.sleep(1.25)
-                def res():
-                    exit=0
-                    re=str(input('是否继续搜索(Y/N)：'))
-                    if re =='Y' or re =='N' or re =='y' or re =='n':
-                        if re =='Y' or re == 'y':
-                            CMCS()
-                        else:
-                            print('感谢您的使用！')
-                            time.sleep(1.5)
-                            exit=1
-                    else:
-                        print('错误：请输入Y(是)/N(否)')
-                        res()
-                    return exit
                 res()
                 if exit==1:
                     time.sleep(2)
                     exit()
             else:
                 print("操作失败，暂不支持vip单曲！")
+                res()
+                if exit==1:
+                    time.sleep(2)
+                    exit()
         else:
             print("操作失败，请输入1~"+str(i+1)+"之间的整数！")
-    except:
-        print("操作失败，请输入整数！")
+            res()
+            if exit==1:
+                time.sleep(2)
+                exit()
+    except Exception as exc:
+        if exc == "":
+            print("操作失败，请输入整数！")
+            res()
+            if exit==1:
+                time.sleep(2)
+                exit()
+        else:
+            print(exc)
+            res()
+            if exit==1:
+                time.sleep(2)
+                exit()
 if __name__ == '__main__':
     CMCS()
