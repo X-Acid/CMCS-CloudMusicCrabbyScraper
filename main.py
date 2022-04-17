@@ -159,21 +159,18 @@ def CMCS(exit=1,proxy="loc",pjson=None):
         if c>0 and c<i+2:
             fpth='C:/Users/'+user+'/AppData/Local/Temp/cmcs_'+str(c-1)+'.htm'
             if os.path.isfile(fpth):
-                def main():
-                    sys.excepthook = cef.ExceptHook
-                    if proxy != 'loc':
-                        switches = {
-                            "enable-media-stream": "",
-                            "proxy-server": proxy['http'],
-                            "disable-gpu": "",
-                        }
-                        cef.Initialize(switches=switches)
-                    else:
-                        cef.Initialize()
-                    cef.CreateBrowserSync(url='file:///'+fpth,window_title="歌曲预览/"+nml[c-1])
-                    cef.MessageLoop()
-                if __name__ == '__main__':
-                    main()
+                sys.excepthook = cef.ExceptHook
+                if proxy != 'loc':
+                    switches = {
+                        "enable-media-stream": "",
+                        "proxy-server": proxy['http'],
+                        "disable-gpu": "",
+                    }
+                    cef.Initialize(switches=switches)
+                else:
+                    cef.Initialize()
+                cef.CreateBrowserSync(url='file:///'+fpth,window_title="歌曲预览/"+nml[c-1])
+                cef.MessageLoop()
                 print("操作成功，感谢您的使用！")
                 re='N'
                 time.sleep(1.25)
