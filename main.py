@@ -1,4 +1,4 @@
-import threading,requests,win32api,platform,base64,ctypes,json,time,glob,sys,os
+import threading,operator,requests,win32api,platform,base64,proxy,ctypes,json,time,glob,sys,os
 from cefpython3 import cefpython as cef
 import tkinter as tk
 from lxml import etree
@@ -25,15 +25,20 @@ class daili:
         can_use = []
         for proxies in proxies_list:
             try:
-                response = requests.get('https://www.baidu.com/',headers=headers,proxies=proxies,timeout=0.3)
+                t1 = time.perf_counter()
+                response = requests.get('https://music.163.com/',headers=headers,proxies={'http':proxies['HTTP']})
+                t2 = time.perf_counter()
+                t3=t2-t1
                 if response.status_code == 200:
+                    proxies['Timeout'] = t3
                     can_use.append(proxies)
             except:
                 pass
+        can_use = sorted(can_use, key=operator.itemgetter('Timeout'))
         return can_use
     def run(self):
         proxies_list = []
-        for page in range(1,3):
+        for page in range(1,5):
             data = self.send_request(page)
             parse_list = self.parse_data(data)
             for tr in parse_list:
@@ -48,16 +53,17 @@ class daili:
                 proxies_list.append(proxies_dict)
         print("Scraping",len(proxies_list),"Chinese http-proxies from Kuaidaili:")
         pjson = self.check_ip(proxies_list)
-        print(len(pjson),"Active&low-delay http-proxies found.") 
+        print(len(pjson),"of them are actually active.") 
         return pjson
-print('======CMCS BY TUDOOU-ETH======')
-def CMCS(exit=1,proxy="loc",pjson=None):
+def CMCS(exit=1,proxy1="loc",pjson=None):
+    if exit==1:
+        print('======CMCS BY TUDOOU-ETH======')
     def res():
         exit=0
         re=str(input('是否继续搜索(Y/N)：'))
         if re =='Y' or re =='N' or re =='y' or re =='n':
             if re =='Y' or re == 'y':
-                CMCS(exit=0,proxy=proxy,pjson=pjson)
+                CMCS(exit=0,proxy1=proxy1,pjson=pjson)
             else:
                 print('感谢您的使用！')
                 time.sleep(1.5)
@@ -70,28 +76,15 @@ def CMCS(exit=1,proxy="loc",pjson=None):
     for y in glob.glob(os.path.join('C:\\Users\\'+user+'\\AppData\\Local\\Temp\\','cmcs_*.htm')):
         os.remove(y)
     def rechk():
-        if proxy == "loc":
+        if proxy1 == "loc":
             try:
                 requests.get('https://www.baidu.com')
             except:
                 print('连接异常，请检查您的网络！')
                 time.sleep(3.5)
                 exit()
-        else:
-            try:
-                requests.get('https://www.baidu.com')
-            except:
-                if len(pjson) > 1:
-                    pjson.remove(pjson[0])
-                    rechk()
-                    refr=1
-                    return refr
-                else:
-                    print('连接异常，请检查您的网络！')
-                    time.sleep(3.5)
-                    exit()
     refr=rechk()
-    if proxy == "loc":
+    if proxy1 == "loc":
         rjson=requests.get('http://ip-api.com/json')
         rjson=json.loads(rjson.text,strict=False)
         if rjson["countryCode"] != "CN":
@@ -102,7 +95,12 @@ def CMCS(exit=1,proxy="loc",pjson=None):
             print('Using proxy...')
             refr=1
     if refr==1:
-        proxy=pjson[0]
+        proxy1=pjson[0]
+        def sp1(po='8029',tho='127.0.0.1',tpo='80'):
+            with proxy.Proxy(['--port',po,'--tunnel-hostname',tho,'--tunnel-port',tpo,'--log-level','c']) as p:
+                proxy.sleep_loop()
+        sp=threading.Thread(target=sp1,args=['8029',proxy1['HTTP'].split(":")[0],proxy1['HTTP'].split(":")[1]])
+        sp.start()
     a=quote(str(input("输入您想搜索的音乐:")))
     x=input("键入输出结果的条数:")
     k=0
@@ -118,8 +116,8 @@ def CMCS(exit=1,proxy="loc",pjson=None):
             print("操作失败，请输入整数！")
         exit()
     slk= 'https://music.163.com/api/search/pc?s='+ a +'&offset=0&limit='+str(x)+'&type=1'
-    if proxy != 'loc':
-        mjson = requests.get(slk, cookies={"NMTID":"00OuXADISZEZcV3wE3Bhnrj6-iWv_YAAAF_p4zVZQ"},proxies=proxy)
+    if proxy1 != 'loc':
+        mjson = requests.get(slk, cookies={"NMTID":"00OuXADISZEZcV3wE3Bhnrj6-iWv_YAAAF_p4zVZQ"},proxies={'http':proxy1['HTTP']})
     else:
         mjson = requests.get(slk, cookies={"NMTID":"00OuXADISZEZcV3wE3Bhnrj6-iWv_YAAAF_p4zVZQ"})
     mjson=json.loads(mjson.text,strict=False)
@@ -160,10 +158,10 @@ def CMCS(exit=1,proxy="loc",pjson=None):
             fpth='C:/Users/'+user+'/AppData/Local/Temp/cmcs_'+str(c-1)+'.htm'
             if os.path.isfile(fpth):
                 sys.excepthook = cef.ExceptHook
-                if proxy != 'loc':
+                if proxy1 != 'loc':
                     switches = {
                         "enable-media-stream": "",
-                        "proxy-server": proxy['http'],
+                        "proxy-server": '127.0.0.1:8029',
                         "disable-gpu": "",
                     }
                     cef.Initialize(switches=switches)
